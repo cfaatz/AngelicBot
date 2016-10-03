@@ -21,22 +21,69 @@
 var commands = [];
 var PlugAPI = require('plugapi');
 const fs = require('fs');
-const credentials = require('credentials.js');
+const credentials = require('./credentials');
 var bot = new PlugAPI({
     email: credentials.username,
     password: credentials.password
 });
 
+/*
+ * Utility commands, such as for string operations
+ */
+ 
+if (typeof String.prototype.startsWith != 'function'){
+	String.prototype.startsWith = function (str){
+		return this.indexOf(str) === 0;
+	};
+}
+
+if (typeof String.prototype.endsWith != 'function'){String.prototype.endsWith = function (str){return this.indexOf(str) === this.length - str.length;};}
+
+if(typeof String.prototype.replaceAt != 'function'){
+	String.prototype.replaceAt=function(index, character){
+		return this.substr(0, index) + character + this.substr(index);
+	}
+}
+
+if(typeof String.prototype.contains != 'function'){
+	String.prototype.contains = function(it){ 
+		return this.indexOf(it) != -1; 
+	};
+}
+
+function collect() {
+  var ret = {};
+  var len = arguments.length;
+  for (var i=0; i<len; i++) {
+    for (p in arguments[i]) {
+      if (arguments[i].hasOwnProperty(p)) {
+        ret[p] = arguments[i][p];
+      }
+    }
+  }
+  return ret;
+}
+
 var loadCommands = function(){
 	var files = fs.readdirSync("./commands");
 	for(var i = 0; i < files.length; i++){
-		if(files[i].endsWith('.js')){
-			var cmd = require('./commands/' + files[i].substring(0, a.length-3));
-			commands[commands.length] = cmd;
-			cmd.init(bot);
-		}
+		var cmd = require('./commands/' + files[i].substring(0, files[i].length-3));
+		commands[commands.length] = cmd;
+		cmd.init();
+		console.log("Command " + cmd.info.name + " has been loaded and enabled.");
 	}
 }
+
+var checkPerms = function(id, thresh){
+	
+	return true;
+	
+	if(/*get perms for id*/5 < thresh)return false;
+	else return true;
+}
+
+loadCommands();
+console.log('Length: ' + commands.length);
 
 bot.connect('angeliccraftmc'); // The part after https://plug.dj
 
@@ -50,15 +97,16 @@ var votids = {};
 var voteskipnots = 0;
 var users = {};
 
-bot.on('roomJoin', function(room){
+bot.on('roomJoin', function(room) {
 	console.log('Loading commands...');
-	loadCommands();
     console.log("Joined " + room);
 	//bot.sendChat("AngelicBot v" + version + ", Developed by Tudedude/Tudedude100: Enabled", 1000);
 });
 
 bot.on('advance', function(data){
-	for(int i = 0; i < commands.length; i++){
+	var botDict = {bot: bot};
+	data = collect(data, botDict);
+	for(var i = 0; i < commands.length; i++){
 		if(commands[i].onAdvance != undefined){
 			commands[i].onAdvance(data);
 		}
@@ -67,9 +115,32 @@ bot.on('advance', function(data){
 
 bot.on('chat', function(data){
 	var msg = data.message;
-	var sender = data.raw.un;
+	var sender = data.raw.username;
 	var date = new Date().getTime();
+	
+	/*
+	 * If the message starts with a '!' it is a command. Dispatch it correctly.
+	 */
 	if(msg.startsWith("!")){
+		var commandSplit = msg.split(' ');
+		var command = "";
+		var args = [];
+		for(var i = 0; i < commandSplit.length; i++){
+			if(i == 0)command = commandSplit[i].toLowerCase().substring(1);
+			else args[args.length] = commandSplit[i];
+		}
+		console.log("User '" + data.from.username + "' (ID: '" + data.from.id + "') ran command: '" + msg.substring(1) + "'");
+		for(var i = 0; i < commands.length; i++){
+			if(commands[i].info.cmd == command || commands[i].info.aliases.indexOf(command) != -1){
+				if(checkPerms(data.from.id, commands[i].info.permLevel))
+					commands[i].execute({player: data.from, cmd: command, args: args, fullData: data, hasPerm: true, bot: bot});
+				else{
+					console.log("User '" + data.from.username + "' (ID: '" + data.from.id + "') was denied access to command: '" + command + "'");
+					commands[i].execute({player: data.from, cmd: command, args: args, fullData: data, hasPerm: false});
+				}
+			}
+		}
+		/*
 		if(msg === '!kill'){
 			if(sender === 'Tudedude100'){
 				bot.sendChat("Dying... :(");
@@ -91,12 +162,6 @@ bot.on('chat', function(data){
 			}
 		}else if(msg.toLowerCase() === '!voteskip'){
 			
-		}else if(msg.toLowerCase() === '!witb'){
-			var date = new Date();
-			if(d-lastJoke >= 1000){
-				bot.sendChat('My creator, Tudedude is the best!!!!!! <3 you Tudedude.');
-				lastJoke = d;
-			}
 		}else if(msg.toLowerCase() === "!joke"){
 			var date = new Date();
 			if(date-lastJoke >= 60000){
@@ -106,47 +171,11 @@ bot.on('chat', function(data){
 			}
 		}else if(msg.toLowerCase() === "!version"){
 			bot.sendChat("AngelicBot developed by Tudedude/Tudedude100, running version: " + version);
-		}
+		}*/
 	}
 });
-
-var jokes = ["What do you call a cow with no legs? Ground beef!", "What's a duck's favorite dip? Quackamole!", 
-"Past, present, and future walked into a bar... it was tense.", "How do you tell the difference between an alligator and a crocodile? You'll see one later and the other in a while!",
-"Three men walked into a bar... They were rather embarrassed.", "Have you heard about that new duck vet? I heard he's a real quack.",
-"Where should you look to find a lost dog? On the woof!", "Where did the king keep his armies? In his sleevies!", "What's a dog's favorite pizza? Pupperoni!",
-"Who made the round table? Sir Cumference!", "What do all the geometry nerds do in the park? They get high on potenuse!", 
-"Why do you never give Elsa a balloon? Because she'll let it go, let it go!", "Why don't you play card games with cats? They're big cheetahs!",
-"Where do you find a dog with no legs? Where you left it!"];
 
 var reconnect = function(){ if(kill != true)bot.connect('angelic-craft'); };
 
 bot.on('close', reconnect);
 bot.on('error', reconnect);
-
-/*
- * Utility commands, such as for string operations
- */
- 
-if (typeof String.prototype.startsWith != 'function'){
-	String.prototype.startsWith = function (str){
-		return this.indexOf(str) === 0;
-	};
-}
-
-if (typeof String.prototype.startsWith != 'function'){
-	String.prototype.startsWith = function (str){
-		return this.indexOf(str) === this.length - str.length;
-	};
-}
-
-if(typeof String.prototype.replaceAt != 'function'){
-	String.prototype.replaceAt=function(index, character){
-		return this.substr(0, index) + character + this.substr(index);
-	}
-}
-
-if(typeof String.prototype.contains != 'function'){
-	String.prototype.contains = function(it){ 
-		return this.indexOf(it) != -1; 
-	};
-}
