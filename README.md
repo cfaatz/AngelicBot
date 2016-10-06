@@ -9,3 +9,6 @@ Commands can be run from chat, by sending a message prefixed with an exclamation
 The current list of commands and their usages is as follows:
 - AutoWoot (!autowoot, !autow, !aw)
 - Joke (!joke, !j)
+- Random Dog (!dog, !rdog, !randdog, !dogs)
+- Random Cat (!cat, !rcat, !randcat, !cats)
+- About (!about, !info, !a)
