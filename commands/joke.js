@@ -4,7 +4,6 @@
 
 var permLevel = 0;
 var name = "Joke";
-var nameLower = "joke";
 var desc = "Tells a funny joke.";
 var cmd = "joke";
 var aliases = ["j"];
@@ -24,7 +23,7 @@ var jokes = ["What do you call a cow with no legs? Ground beef!", "What's a duck
 module.exports = {
 	init: function(){
 		this.lastJoke = 0;
-		this.info = {permLevel: permLevel, name: name, nameLower: nameLower, desc: desc, cmd: cmd, aliases: aliases};
+		this.info = {permLevel: permLevel, name: name, desc: desc, cmd: cmd, aliases: aliases};
 	},
 	execute: function(data){
 		var now = new Date().getTime();

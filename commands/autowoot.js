@@ -4,7 +4,6 @@
 
 var permLevel = 1;
 var name = "AutoWoot";
-var nameLower = "autoWoot";
 var desc = "Toggles auto-woot on or off immediately.";
 var cmd = "autowoot";
 var aliases = ["aw", "autow"];
@@ -17,7 +16,7 @@ var aliases = ["aw", "autow"];
 module.exports = {
 	init: function(bot){
 		this.autoWoot = true;
-		this.info = {permLevel: permLevel, name: name, nameLower: nameLower, desc: desc, cmd: cmd, aliases: aliases};
+		this.info = {permLevel: permLevel, name: name, desc: desc, cmd: cmd, aliases: aliases};
 		this.bot = bot;
 	},
 	execute: function(data){

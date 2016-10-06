@@ -9,7 +9,8 @@
 **  AngelicCraft Website Address   **
 ** http://www.angeliccraftpvp.net  **
 *************************************
-**     No Permission For Reuse     **
+**     Licensing Information @     **
+**           LICENSE.md            **
 *************************************
 **   Using PlugAPI - API Credits   **
 *************************************
@@ -22,10 +23,21 @@ var commands = [];
 var PlugAPI = require('plugapi');
 const fs = require('fs');
 const credentials = require('./credentials');
+const directory = "C:/Bot";
 var bot = new PlugAPI({
     email: credentials.username,
     password: credentials.password
 });
+var version = "0.01";
+var autowootbool = true;
+var kill = false;
+var lastJoke = 0;
+var votes = 0;
+var skipBar = 0;
+var votids = {};
+var voteskipnots = 0;
+var users = {};
+var duration = 600;
 
 /*
  * Utility commands, such as for string operations
@@ -82,25 +94,19 @@ var checkPerms = function(id, thresh){
 	else return true;
 }
 
+var setDuration = function(duration){
+	
+}
+
 loadCommands();
 console.log('Length: ' + commands.length);
 
 bot.connect('angeliccraftmc'); // The part after https://plug.dj
 
-var version = "0.01";
-var autowootbool = true;
-var kill = false;
-var lastJoke = 0;
-var votes = 0;
-var skipBar = 0;
-var votids = {};
-var voteskipnots = 0;
-var users = {};
-
 bot.on('roomJoin', function(room) {
 	console.log('Loading commands...');
     console.log("Joined " + room);
-	//bot.sendChat("AngelicBot v" + version + ", Developed by Tudedude/Tudedude100: Enabled", 1000);
+	bot.sendChat("AngelicBot v" + version + ", Developed by Tudedude/Tudedude100: Enabled", 1000);
 });
 
 bot.on('advance', function(data){
@@ -111,13 +117,41 @@ bot.on('advance', function(data){
 			commands[i].onAdvance(data);
 		}
 	}
+	console.log(data);
+	if(data != null && data.media != null && data.media.duration > duration){
+		bot.moderateForceSkip(function(){
+			if(bot.getWaitListPosition(data.currentDJ.id) == -1){
+				bot.moderateAddDJ(data.currentDJ.id);
+			}
+			var pos = (bot.getWaitList().length >= 3) ? 3 : bot.getWaitList().length;
+			bot.moderateMoveDJ(data.currentDJ.id, pos);
+			bot.sendChat("@" + data.currentDJ.username + " - Your song exceeded the maximum duration limit. Please do not play songs longer than " + parseFloat(Math.round((duration / 60) * 100) / 100).toFixed(2) + " minutes. You have been added to position " + pos + " on the waitlist.");
+		});
+	}
+	//bot.moderateMoveDJ('xxxxxx', nb);
+	//bot.moderateAddDJ('xxxxxxxxx');
+	//bot.moderateForceSkip(callback);
+	//bot.moderateDeleteChat('xxxxxxxxx');
+});
+
+bot.on('userJoin', function(data){
+	function readFileCallback(err, data){
+		if(err) throw err;
+		console.log(JSON.parse(data));
+	}
+	fs.readFile(directory + "/user-cache.json", 'utf-8', readFileCallback);
+	var found = false;
+/*	for (var key in p) {
+		if (p.hasOwnProperty(key)) {
+			console.log(key + " -> " + p[key]);
+		}
+	}*/
 });
 
 bot.on('chat', function(data){
 	var msg = data.message;
 	var sender = data.raw.username;
 	var date = new Date().getTime();
-	
 	/*
 	 * If the message starts with a '!' it is a command. Dispatch it correctly.
 	 */
